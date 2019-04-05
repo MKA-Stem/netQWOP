@@ -1,0 +1,21 @@
+{
+  "name": "mhs-2019",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:MKA-Stem/mhs-2019.git",
+  "author": "William Goodall <wgoodall01@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "dev": "next",
+    "build": "next build",
+    "start": "next start",
+    "export": "next export",
+    "format": "prettier --ignore-path .gitignore --write {**/,}*.{js,json}"
+  },
+  "dependencies": {
+    "next": "^8.0.4",
+    "prettier": "^1.16.4",
+    "react": "^16.8.6",
+    "react-dom": "^16.8.6"
+  }
+}
