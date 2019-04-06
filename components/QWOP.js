@@ -20,7 +20,7 @@ class QWOP extends React.Component {
 
   componentDidMount() {
     const { width, height } = this.props;
-    this.world = planck.World(Vec2(0, 10));
+    this.world = planck.World(Vec2(0, 0));
 
     this.ctx = this.canvas.getContext("2d");
 
@@ -36,30 +36,115 @@ class QWOP extends React.Component {
       restitution: 0
     });
 
-    const staticBar = this.world.createBody().setDynamic();
-    staticBar.createFixture(planck.Box(2, 0.2));
-    staticBar.setPosition(Vec2(17, 5));
-    staticBar.setMassData({
-      mass: 1,
+    const torso = this.world.createDynamicBody(
+      Vec2(width / 2 / this.scale, height / 2 / this.scale - 1.5)
+    );
+    torso.createFixture({
+      shape: planck.Box(1, 2.5),
+      filterGroupIndex: -1
+    });
+    torso.setMassData({
+      mass: 4,
+      center: Vec2(),
+      I: 3
+    });
+
+    const leftThigh = this.world.createDynamicBody(
+      Vec2(width / 2 / this.scale + 0.25, height / 2 / this.scale + 2.5)
+    );
+    leftThigh.createFixture({
+      shape: planck.Box(0.5, 2),
+      filterGroupIndex: -1
+    });
+    leftThigh.setMassData({
+      mass: 3,
+      center: Vec2(),
+      I: 2
+    });
+
+    const rightThigh = this.world.createDynamicBody(
+      Vec2(width / 2 / this.scale - 0.25, height / 2 / this.scale + 2.5)
+    );
+    rightThigh.createFixture({
+      shape: planck.Box(0.5, 2),
+      filterGroupIndex: -1
+    });
+    rightThigh.setMassData({
+      mass: 3,
+      center: Vec2(),
+      I: 2
+    });
+
+    this.leftHip = this.world.createJoint(
+      planck.RevoluteJoint(
+        { motorSpeed: 0, maxMotorTorque: 30, enableMotor: true },
+        leftThigh,
+        torso,
+        Vec2(width / 2 / this.scale + 0.25, height / 2 / this.scale + 0.5)
+      )
+    );
+    console.log(this.leftHip);
+    // leftHipJoint.setAngle(Math.PI / 4);
+
+    this.rightHip = this.world.createJoint(
+      planck.RevoluteJoint(
+        { motorSpeed: 0, maxMotorTorque: 30, enableMotor: true },
+        rightThigh,
+        torso,
+        Vec2(width / 2 / this.scale - 0.25, height / 2 / this.scale + 0.5)
+      )
+    );
+
+    const leftCalf = this.world.createDynamicBody(
+      Vec2(width / 2 / this.scale + 0.25, height / 2 / this.scale + 5.6)
+    );
+    leftCalf.createFixture({
+      shape: planck.Box(0.3, 1.4),
+      filterGroupIndex: -1
+    });
+    leftCalf.setMassData({
+      mass: 2,
       center: Vec2(),
       I: 1
     });
 
-    const dynamicBar = this.world.createBody().setDynamic();
-    dynamicBar.createFixture(planck.Box(2, 0.2));
-    dynamicBar.setPosition(Vec2(13, 5));
-    dynamicBar.setMassData({
-      mass: 1,
+    const rightCalf = this.world.createDynamicBody(
+      Vec2(width / 2 / this.scale - 0.25, height / 2 / this.scale + 5.6)
+    );
+    rightCalf.createFixture({
+      shape: planck.Box(0.3, 1.4),
+      filterGroupIndex: -1
+    });
+    rightCalf.setMassData({
+      mass: 2,
       center: Vec2(),
       I: 1
     });
 
-    this.revoluteJoint = this.world.createJoint(
+    this.leftKnee = this.world.createJoint(
+      planck.RevoluteJoint(
+        { motorSpeed: 0, maxMotorTorque: 30, enableMotor: true },
+        leftCalf,
+        leftThigh,
+        Vec2(width / 2 / this.scale + 0.25, height / 2 / this.scale + 4.2)
+      )
+    );
+
+    this.rightKnee = this.world.createJoint(
+      planck.RevoluteJoint(
+        { motorSpeed: 0, maxMotorTorque: 30, enableMotor: true },
+        rightCalf,
+        rightThigh,
+        Vec2(width / 2 / this.scale - 0.25, height / 2 / this.scale + 4.2)
+      )
+    );
+
+    /* const revoluteJoint = this.world.createJoint(
       planck.RevoluteJoint({}, dynamicBar, staticBar, Vec2(15, 5))
     );
-    this.revoluteJoint.setMaxMotorTorque(50);
-    this.revoluteJoint.setMotorSpeed(0);
-    this.revoluteJoint.enableMotor(true);
+    revoluteJoint.setMaxMotorTorque(50);
+    revoluteJoint.setMotorSpeed(10);
+    revoluteJoint.enableMotor(true); */
 
     window.world = this.world; // Debug
     this._frame();
@@ -82,10 +167,11 @@ class QWOP extends React.Component {
 
     this.ctx.beginPath();
     this.ctx.moveTo(vertices[0].x, vertices[0].y);
-    for (const v of vertices.slice(1, vertices.length)) {
+    for (const v of vertices.reverse()) {
       this.ctx.lineTo(v.x, v.y);
     }
-    this.ctx.fill();
+    this.ctx.lineWidth = 0.05;
+    this.ctx.stroke();
 
     this.ctx.restore();
   };
@@ -111,16 +197,11 @@ class QWOP extends React.Component {
     window.requestAnimationFrame(this._frame);
   };
 
-  _updateMotors({ q, w, o: _o, p: _p }) {
-    if (q && w) {
-      this.revoluteJoint.setMotorSpeed(0);
-    } else if (q) {
-      this.revoluteJoint.setMotorSpeed(10);
-    } else if (w) {
-      this.revoluteJoint.setMotorSpeed(-10);
-    } else {
-      this.revoluteJoint.setMotorSpeed(0);
-    }
+  _updateMotors({ q, w, o, p }) {
+    this.leftHip.setMotorSpeed(q ? 10 : 0);
+    this.rightHip.setMotorSpeed(w ? 10 : 0);
+    this.leftKnee.setMotorSpeed(o ? 10 : 0);
+    this.rightKnee.setMotorSpeed(p ? 10 : 0);
   }
 
   render() {

@@ -34,10 +34,10 @@ export default class Host extends React.Component {
         <QWOP
           width={800}
           height={800}
-          q={buttons.q}
-          w={buttons.w}
-          o={buttons.w}
-          p={buttons.p}
+          q={buttons.q || false}
+          w={buttons.w || false}
+          o={buttons.w || false}
+          p={buttons.p || false}
         />
       </div>
     );
