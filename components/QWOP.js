@@ -29,46 +29,33 @@ class QWOP extends React.Component {
     ground.createFixture({
       shape: planck.Box(width, 1),
       friction: 0.8,
-      restitution: 0.6
+      restitution: 0
     });
 
-    const falling1 = this.world.createBody().setDynamic();
-    falling1.createFixture(planck.Box(0.5, 0.5));
-    falling1.setPosition(Vec2(5, 5));
-    falling1.setMassData({
+    const staticBar = this.world.createBody().setDynamic();
+    staticBar.createFixture(planck.Box(2, 0.2));
+    staticBar.setPosition(Vec2(17, 5));
+    staticBar.setMassData({
       mass: 1,
       center: Vec2(),
       I: 1
     });
 
-    const falling2 = this.world.createBody().setDynamic();
-    falling2.createFixture(planck.Box(0.5, 0.5));
-    falling2.setPosition(Vec2(5.5, 7));
-    falling2.setMassData({
+    const dynamicBar = this.world.createBody().setDynamic();
+    dynamicBar.createFixture(planck.Box(2, 0.2));
+    dynamicBar.setPosition(Vec2(13, 5));
+    dynamicBar.setMassData({
       mass: 1,
       center: Vec2(),
       I: 1
     });
 
-    /* var bar = this.world.createBody({
-      position: Vec2(250, 300)
-    });
-    bar.createFixture(
-      planck.Polygon([Vec2(-50, -20), Vec2(-50, 0), Vec2(50, 0), Vec2(50, 20)])
+    const revoluteJoint = this.world.createJoint(
+      planck.RevoluteJoint({}, dynamicBar, staticBar, Vec2(15, 5))
     );
-
-    for (var i = -2; i <= 2; i++) {
-      for (var j = -2; j <= 2; j++) {
-        var box = this.world.createBody().setDynamic();
-        box.createFixture(planck.Box(5, 5));
-        box.setPosition(Vec2(200 + i * 12, 200 + j * 12));
-        box.setMassData({
-          mass: 1,
-          center: Vec2(),
-          I: 1
-        });
-      }
-    } */
+    revoluteJoint.setMaxMotorTorque(50);
+    revoluteJoint.setMotorSpeed(10);
+    revoluteJoint.enableMotor(true);
 
     window.world = this.world; // Debug
     this._frame();
