@@ -1,3 +1,5 @@
+import QWOP from "../components/QWOP";
+
 const Index = () => (
   <div>
     <style jsx>{`
@@ -26,6 +28,7 @@ const Index = () => (
       }
     `}</style>
     <h1>netQWOP</h1>
+    <QWOP />
   </div>
 );
 
