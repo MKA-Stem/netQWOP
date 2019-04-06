@@ -1,12 +1,12 @@
 import React from "react";
 import io from "socket.io-client";
 import id from "../lib/id";
+import QWOP from "../components/QWOP";
 
 export default class Host extends React.Component {
   room = process.browser ? id() : "";
 
   state = {
-    messages: [],
     buttons: {}
   };
 
@@ -26,16 +26,19 @@ export default class Host extends React.Component {
   };
 
   render() {
-    const { messages, buttons } = this.state;
+    const { buttons } = this.state;
     return (
       <div>
         host for room: {this.room}
         <pre>{JSON.stringify(buttons, null, 2)}</pre>
-        <ul>
-          {messages.map(e => (
-            <li>{JSON.stringify(e)}</li>
-          ))}
-        </ul>
+        <QWOP
+          width={800}
+          height={800}
+          q={buttons.q}
+          w={buttons.w}
+          o={buttons.w}
+          p={buttons.p}
+        />
       </div>
     );
   }

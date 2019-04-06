@@ -1,3 +1,5 @@
+/* eslint-disable react/no-unused-prop-types */
+
 import React from "react";
 import PropTypes from "prop-types";
 import planck, { Vec2 } from "planck-js";
@@ -5,14 +7,16 @@ import planck, { Vec2 } from "planck-js";
 class QWOP extends React.Component {
   static propTypes = {
     height: PropTypes.number.isRequired,
-    width: PropTypes.number.isRequired
+    width: PropTypes.number.isRequired,
+    q: PropTypes.bool.isRequired,
+    w: PropTypes.bool.isRequired,
+    o: PropTypes.bool.isRequired,
+    p: PropTypes.bool.isRequired
   };
 
-  constructor(props) {
-    super(props);
-    this.state = {};
-    this.scale = 40;
-  }
+  static controls = ["q", "w", "o", "p"];
+
+  scale = 40;
 
   componentDidMount() {
     const { width, height } = this.props;
@@ -50,15 +54,20 @@ class QWOP extends React.Component {
       I: 1
     });
 
-    const revoluteJoint = this.world.createJoint(
+    this.revoluteJoint = this.world.createJoint(
       planck.RevoluteJoint({}, dynamicBar, staticBar, Vec2(15, 5))
     );
-    revoluteJoint.setMaxMotorTorque(50);
-    revoluteJoint.setMotorSpeed(10);
-    revoluteJoint.enableMotor(true);
+    this.revoluteJoint.setMaxMotorTorque(50);
+    this.revoluteJoint.setMotorSpeed(0);
+    this.revoluteJoint.enableMotor(true);
 
     window.world = this.world; // Debug
     this._frame();
+  }
+
+  shouldComponentUpdate(nextProps) {
+    this._updateMotors(nextProps);
+    return false; // never update
   }
 
   _drawPolygon = (body, shape) => {
@@ -101,6 +110,18 @@ class QWOP extends React.Component {
 
     window.requestAnimationFrame(this._frame);
   };
+
+  _updateMotors({ q, w, o: _o, p: _p }) {
+    if (q && w) {
+      this.revoluteJoint.setMotorSpeed(0);
+    } else if (q) {
+      this.revoluteJoint.setMotorSpeed(10);
+    } else if (w) {
+      this.revoluteJoint.setMotorSpeed(-10);
+    } else {
+      this.revoluteJoint.setMotorSpeed(0);
+    }
+  }
 
   render() {
     const { width, height } = this.props;
