@@ -7,7 +7,7 @@ class Index extends React.Component {
   componentDidMount() {
     const { router } = this.props;
     if (isMobile()) {
-      router.replace("/controller");
+      router.replace("/join");
     } else {
       router.replace("/host");
     }
