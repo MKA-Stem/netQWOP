@@ -21,12 +21,20 @@ async function main() {
   const io = socketIO(server);
 
   io.on("connection", socket => {
-    const interval = setInterval(() => {
-      socket.emit("test", { message: "Hello, world!" });
-      console.log("pinged");
-    }, 1000);
+    const log = (...text) => console.log(`[${socket.id}] `, ...text);
+    log("connected");
 
-    socket.on("disconnect", () => clearInterval(interval));
+    let room = null;
+    socket.on("join", joinRoom => {
+      room = joinRoom;
+      log("join", room);
+      socket.join(room);
+    });
+
+    socket.on("button", msg => {
+      log("button", msg);
+      io.to(room).emit("button", msg);
+    });
   });
 
   server.listen(port, err => {

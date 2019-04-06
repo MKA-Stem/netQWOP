@@ -1,35 +1,46 @@
-import QWOP from "../components/QWOP";
+import { withRouter } from "next/router";
+import React from "react";
+import PropTypes from "prop-types";
+import isMobile from "is-mobile";
 
-const Index = () => (
-  <div>
-    <style jsx>{`
-      div {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: flex-center;
+class Index extends React.Component {
+  componentDidMount() {
+    const { router } = this.props;
+    if (isMobile()) {
+      router.replace("/controller");
+    } else {
+      router.replace("/host");
+    }
+  }
 
-        /* cover entire screen on mobile */
-        position: absolute;
-        top: 0;
-        left: 0;
-        bottom: 0;
-        right: 0;
-      }
+  render() {
+    const color = "rgba(0,0,0,0.2)";
+    return (
+      <div>
+        <style jsx>{`
+          p {
+            width: 16rem;
+            height: 4rem;
+            line-height: 4rem;
+            font-size: 2rem;
 
-      h1 {
-        user-select: none;
-        display: inline-block;
-        padding: 2rem 3rem;
-        margin-top: 20rem;
-        border-radius: 0.5rem;
-        box-shadow: 0 1rem 10rem rgba(0, 0, 0, 0.3);
-        margin: 0 auto;
-      }
-    `}</style>
-    <h1>netQWOP</h1>
-    <QWOP />
-  </div>
-);
+            text-align: center;
+            color: ${color};
+            font-variant: small-caps;
 
-export default Index;
+            margin: 0 auto;
+            margin-top: 10rem;
+            border: 1px solid ${color};
+          }
+        `}</style>
+        <p>loading</p>
+      </div>
+    );
+  }
+}
+
+Index.propTypes = {
+  router: PropTypes.object.isRequired
+};
+
+export default withRouter(Index);
