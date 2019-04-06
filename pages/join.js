@@ -11,11 +11,21 @@ class Join extends React.Component {
     room: ""
   };
 
-  _goToController = () => {
+  _goToController = e => {
     const { router } = this.props;
     const { room } = this.state;
 
+    e.preventDefault(); // don't reload on form submit
+    if (!this._valid()) {
+      return; // if invalid, do nothing
+    }
+
     router.push({ pathname: "/controller", query: { room } });
+  };
+
+  _valid = () => {
+    const { room } = this.state;
+    return room.length === 6;
   };
 
   _onChange = e => {
@@ -114,19 +124,17 @@ class Join extends React.Component {
         `}</style>
         <h1 className="title">netQWOP</h1>
         <h2 className="prompt">Join a Game</h2>
-        <input
-          placeholder="XXXXXX"
-          value={room}
-          maxLength={6}
-          onChange={this._onChange}
-        />
-        <button
-          disabled={room.length !== 6}
-          type="button"
-          onClick={this._goToController}
-        >
-          Go!
-        </button>
+        <form onSubmit={this._goToController}>
+          <input
+            placeholder="XXXXXX"
+            value={room}
+            maxLength={6}
+            onChange={this._onChange}
+          />
+          <button disabled={!this._valid()} type="submit">
+            Go!
+          </button>
+        </form>
       </div>
     );
   }
