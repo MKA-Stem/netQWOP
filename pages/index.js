@@ -25,7 +25,7 @@ const Index = () => (
         margin: 0 auto;
       }
     `}</style>
-    <h1>mhs-2019</h1>
+    <h1>netQWOP</h1>
   </div>
 );
 
