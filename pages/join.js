@@ -8,19 +8,20 @@ class Join extends React.Component {
   };
 
   state = {
-    room: ""
+    room: "",
+    control: "q"
   };
 
   _goToController = e => {
     const { router } = this.props;
-    const { room } = this.state;
+    const { room, control } = this.state;
 
     e.preventDefault(); // don't reload on form submit
     if (!this._valid()) {
       return; // if invalid, do nothing
     }
 
-    router.push({ pathname: "/controller", query: { room } });
+    router.push({ pathname: "/controller", query: { room, control } });
   };
 
   _valid = () => {
@@ -41,7 +42,7 @@ class Join extends React.Component {
   };
 
   render() {
-    const { room } = this.state;
+    const { control, room } = this.state;
 
     const between = `
       margin-top:2rem;
@@ -51,12 +52,15 @@ class Join extends React.Component {
       height: 4rem;
       line-height: 4rem;
     `;
+    const rounding = `
+      border-radius: 0.5rem;
+    `;
     const shade = "rgba(0,0,0,0.5)";
     const light = "rgba(0,0,0,0.1)";
     return (
-      <div>
+      <div className="root">
         <style jsx>{`
-          div {
+          .root {
             margin: 0 auto;
             padding: 2rem;
             max-width: 20rem;
@@ -82,6 +86,7 @@ class Join extends React.Component {
             font-family: monospace;
             text-transform: uppercase;
 
+            ${rounding}
             ${sizing}
             font-size: 3rem;
             padding-left: 2rem;
@@ -96,16 +101,16 @@ class Join extends React.Component {
             color: ${shade};
           }
 
-          input:focused {
-            border: none;
+          input:focus {
+            outline: none;
           }
 
           button {
             display: block;
             ${between}
 
+            ${rounding}
             background-color: orangered;
-            border-radius: 1rem;
             color: white;
             font-weight: bold;
 
@@ -116,6 +121,33 @@ class Join extends React.Component {
             box-shadow: 0 0 20px ${light};
 
             transition: 0.2s;
+          }
+
+          label {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+          }
+
+          label > div {
+            text-transform: uppercase;
+            margin-right: 1rem;
+          }
+
+          select {
+            ${rounding}
+            background-color: ${light};
+            border:none;
+
+            width: 100%;
+            height: 2rem;
+            padding: 0 0.5rem;
+
+            font-size: 1rem;
+          }
+
+          select:focus {
+            outline: none;
           }
 
           button:disabled {
@@ -131,6 +163,18 @@ class Join extends React.Component {
             maxLength={6}
             onChange={this._onChange}
           />
+          <label>
+            <div>role</div>
+            <select
+              value={control}
+              onChange={e => this.setState({ control: e.target.value })}
+            >
+              <option value="q">Q | thighs +</option>
+              <option value="w">W | thighs -</option>
+              <option value="o">O | calves +</option>
+              <option value="p">P | calves -</option>
+            </select>
+          </label>
           <button disabled={!this._valid()} type="submit">
             Go!
           </button>
