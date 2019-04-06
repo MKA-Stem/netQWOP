@@ -43,10 +43,18 @@ class QWOP extends React.Component {
       shape: planck.Box(1, 2.5),
       filterGroupIndex: -1
     });
+    torso.createFixture({
+      shape: planck.Box(0.2, 0.3, Vec2(0, -2.5 - 0.3)),
+      filterGroupIndex: -1
+    });
+    torso.createFixture({
+      shape: planck.Box(0.7, 0.7, Vec2(0, -2.5 - 0.6 - 0.7)),
+      filterGroupIndex: -1
+    });
     torso.setMassData({
-      mass: 4,
-      center: Vec2(),
-      I: 3
+      mass: 5,
+      center: Vec2(0, -1),
+      I: 3.5
     });
 
     const leftThigh = this.world.createDynamicBody(
@@ -139,12 +147,51 @@ class QWOP extends React.Component {
       )
     );
 
-    /* const revoluteJoint = this.world.createJoint(
-      planck.RevoluteJoint({}, dynamicBar, staticBar, Vec2(15, 5))
+    const leftFoot = this.world.createDynamicBody(
+      Vec2(width / 2 / this.scale + 0.25, height / 2 / this.scale + 7.0)
     );
-    revoluteJoint.setMaxMotorTorque(50);
-    revoluteJoint.setMotorSpeed(10);
-    revoluteJoint.enableMotor(true); */
+    leftFoot.createFixture({
+      shape: planck.Box(0.6, 0.3, Vec2(0.3, 0)),
+      filterGroupIndex: -1
+    });
+    leftFoot.setMassData({
+      mass: 1,
+      center: Vec2(0.3, 0),
+      I: 0.5
+    });
+
+    const rightFoot = this.world.createDynamicBody(
+      Vec2(width / 2 / this.scale - 0.25, height / 2 / this.scale + 7.0)
+    );
+    rightFoot.createFixture({
+      shape: planck.Box(0.6, 0.3, Vec2(0.3, 0)),
+      filterGroupIndex: -1
+    });
+    rightFoot.setMassData({
+      mass: 1,
+      center: Vec2(0.3, 0),
+      I: 0.5
+    });
+
+    // Left Ankle
+    this.world.createJoint(
+      planck.RevoluteJoint(
+        {},
+        leftCalf,
+        leftFoot,
+        Vec2(width / 2 / this.scale + 0.25, height / 2 / this.scale + 6.7)
+      )
+    );
+
+    // Right Ankle
+    this.world.createJoint(
+      planck.RevoluteJoint(
+        {},
+        rightCalf,
+        rightFoot,
+        Vec2(width / 2 / this.scale - 0.25, height / 2 / this.scale + 6.7)
+      )
+    );
 
     window.world = this.world; // Debug
     this._frame();
