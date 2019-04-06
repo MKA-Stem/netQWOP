@@ -6,9 +6,9 @@
   "author": "William Goodall <wgoodall01@gmail.com>, Mark Apinis <mapinis2019@gmail.com>",
   "license": "MIT",
   "scripts": {
-    "dev": "next",
+    "dev": "node server.js",
     "build": "next build",
-    "start": "next start",
+    "start": "NODE_ENV=production node server.js",
     "export": "next export",
     "format": "prettier --ignore-path .gitignore --write {**/,}*.{js,json}",
     "lint": "eslint --ignore-path .gitignore ."
