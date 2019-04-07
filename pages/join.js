@@ -1,5 +1,6 @@
 import { withRouter } from "next/router";
 import React from "react";
+import io from "socket.io-client";
 import PropTypes from "prop-types";
 
 class Join extends React.Component {
@@ -9,24 +10,28 @@ class Join extends React.Component {
 
   state = {
     room: "",
-    control: "q"
+    control: "q",
+    valid: false // does this room exist, true/false/null
   };
+
+  componentDidMount() {
+    this.socket = io({ transports: ["websocket"] });
+  }
+
+  componentWillUnmount() {
+    this.socket.disconnect();
+  }
 
   _goToController = e => {
     const { router } = this.props;
-    const { room, control } = this.state;
+    const { room, control, valid } = this.state;
 
     e.preventDefault(); // don't reload on form submit
-    if (!this._valid()) {
+    if (!valid) {
       return; // if invalid, do nothing
     }
 
     router.push({ pathname: "/controller", query: { room, control } });
-  };
-
-  _valid = () => {
-    const { room } = this.state;
-    return room.length === 6;
   };
 
   _onChange = e => {
@@ -37,12 +42,15 @@ class Join extends React.Component {
     }
 
     text = text.toLowerCase();
+    this.setState({ room: text, valid: null });
 
-    this.setState({ room: text });
+    this.socket.emit("check", text, ({ valid }) => {
+      this.setState({ valid });
+    });
   };
 
   render() {
-    const { control, room } = this.state;
+    const { control, room, valid } = this.state;
 
     const between = `
       margin-top:2rem;
@@ -77,6 +85,12 @@ class Join extends React.Component {
           }
 
           input {
+            ${
+              valid === false && room.length === 6
+                ? "border: 2px solid red;"
+                : "border: 2px solid transparent;"
+            }
+          
             display: block;
             width: 100%;
             ${between}
@@ -91,7 +105,6 @@ class Join extends React.Component {
             font-size: 3rem;
             padding-left: 2rem;
 
-            border: none;
             font-size: 2rem;
             background-color: ${light};
           }
@@ -175,7 +188,7 @@ class Join extends React.Component {
               <option value="p">P | calves -</option>
             </select>
           </label>
-          <button disabled={!this._valid()} type="submit">
+          <button disabled={!valid} type="submit">
             Go!
           </button>
         </form>

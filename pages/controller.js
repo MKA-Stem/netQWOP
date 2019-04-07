@@ -1,16 +1,18 @@
 import React from "react";
+import { withRouter } from "next/router";
 import PropTypes from "prop-types";
 import io from "socket.io-client";
 import Key from "../components/Key";
 
-export default class Controller extends React.Component {
+class Controller extends React.Component {
   static getInitialProps({ query: { room, control } }) {
     return { room, control };
   }
 
   static propTypes = {
     room: PropTypes.string.isRequired,
-    control: PropTypes.string.isRequired
+    control: PropTypes.string.isRequired,
+    router: PropTypes.object.isRequired
   };
 
   state = {
@@ -24,8 +26,9 @@ export default class Controller extends React.Component {
   }
 
   _onConnect = () => {
-    const { room } = this.props;
+    const { room, router } = this.props;
     this.socket.emit("join", room);
+    this.socket.on("close", () => router.push("/join"));
     this.setState({ connected: true });
   };
 
@@ -98,3 +101,5 @@ export default class Controller extends React.Component {
     );
   }
 }
+
+export default withRouter(Controller);

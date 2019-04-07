@@ -1,13 +1,11 @@
 import React from "react";
 import io from "socket.io-client";
-import id from "../lib/id";
 import QWOP from "../components/QWOP";
 
 export default class Host extends React.Component {
-  room = process.browser ? id() : "";
-
   state = {
-    buttons: {}
+    buttons: {},
+    room: null
   };
 
   componentDidMount() {
@@ -16,9 +14,10 @@ export default class Host extends React.Component {
   }
 
   _onConnect = () => {
-    const { room } = this;
+    this.socket.emit("host", null, room => {
+      this.setState({ room });
+    });
     this.socket.on("button", this._onButton);
-    this.socket.emit("join", room);
   };
 
   _onButton = ({ control, state }) => {
@@ -26,10 +25,10 @@ export default class Host extends React.Component {
   };
 
   render() {
-    const { buttons } = this.state;
+    const { buttons, room } = this.state;
     return (
       <div>
-        host for room: {this.room}
+        host for room: {room}
         <pre>{JSON.stringify(buttons, null, 2)}</pre>
         <QWOP
           width={800}
