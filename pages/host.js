@@ -93,7 +93,7 @@ export default class Host extends React.Component {
             className={qwopClass}
             q={buttons.q || false}
             w={buttons.w || false}
-            o={buttons.w || false}
+            o={buttons.o || false}
             p={buttons.p || false}
           />
         )}

@@ -59,12 +59,11 @@ class QWOP extends React.Component {
     params.thighLength = 3.2;
     params.rightThigh = PolarVec(params.thighLength, 1.1);
     params.leftThigh = PolarVec(params.thighLength, 1.5);
-    params.hipFlex = Math.PI / 1.8;
     params.calfLength = 3.4;
     params.rightCalf = PolarVec(params.calfLength, 1.8);
     params.leftCalf = PolarVec(params.calfLength, 1.9);
-    params.kneeFlex = Math.PI / 3;
     params.footLength = 1;
+    params.footFriction = 0.3;
     params.ankleFlex = 0.2;
 
     this.points = {};
@@ -145,7 +144,7 @@ class QWOP extends React.Component {
             )
           )
       ],
-      friction: 1
+      friction: params.footFriction
     });
     bodies.leftFoot = createLimb({
       between: [
@@ -158,14 +157,14 @@ class QWOP extends React.Component {
             )
           )
       ],
-      friction: 1
+      friction: params.footFriction
     });
 
     const createJoint = ({
       between: [a, b],
       at,
       motorSpeed = 0,
-      maxMotorTorque = 1000,
+      maxMotorTorque = 100,
       enableMotor = true,
       enableLimit = true,
       lowerAngle = undefined,
@@ -293,10 +292,39 @@ class QWOP extends React.Component {
   };
 
   _updateMotors({ q, w, o, p }) {
-    this.joints.leftHip.setMotorSpeed(q ? 3 : 0);
-    this.joints.rightHip.setMotorSpeed(w ? 3 : 0);
-    this.joints.leftKnee.setMotorSpeed(o ? 3 : 0);
-    this.joints.rightKnee.setMotorSpeed(p ? 3 : 0);
+    // from https://techspirited.com/tips-for-beginners-to-play-qwop-on-computer-like-pro
+    // Q moves the anterior thigh forward (the one facing the player), and the posterior thigh back.
+    // W moves the posterior thigh forward, and the anterior thigh back (opposite of Q).
+    // O moves the anterior calf forward, and the posterior one back.
+    // P moves the posterior calf forward and the anterior one back (opposite of O).
+
+    const thighs = q ? 1 : w ? -1 : 0;
+    const calves = o ? 1 : p ? -1 : 0;
+    const speed = 10;
+
+    if (thighs === 0) {
+      this.joints.leftHip.enableLimit(true);
+      this.joints.rightHip.enableLimit(true);
+      this.joints.leftHip.setMotorSpeed(0);
+      this.joints.rightHip.setMotorSpeed(0);
+    } else {
+      this.joints.leftHip.enableLimit(false);
+      this.joints.rightHip.enableLimit(false);
+      this.joints.leftHip.setMotorSpeed(-speed * thighs);
+      this.joints.rightHip.setMotorSpeed(speed * thighs);
+    }
+
+    if (calves === 0) {
+      this.joints.leftKnee.enableLimit(true);
+      this.joints.rightKnee.enableLimit(true);
+      this.joints.leftKnee.setMotorSpeed(0);
+      this.joints.rightKnee.setMotorSpeed(0);
+    } else {
+      this.joints.leftKnee.enableLimit(false);
+      this.joints.rightKnee.enableLimit(false);
+      this.joints.leftKnee.setMotorSpeed(speed * thighs);
+      this.joints.rightKnee.setMotorSpeed(speed * thighs);
+    }
   }
 
   render() {
