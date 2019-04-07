@@ -11,7 +11,8 @@ class QWOP extends React.Component {
     q: PropTypes.bool.isRequired,
     w: PropTypes.bool.isRequired,
     o: PropTypes.bool.isRequired,
-    p: PropTypes.bool.isRequired
+    p: PropTypes.bool.isRequired,
+    onFinish: PropTypes.func.isRequired
   };
 
   static controls = ["q", "w", "o", "p"];
@@ -19,7 +20,7 @@ class QWOP extends React.Component {
   scale = 40;
 
   componentDidMount() {
-    const { width, height } = this.props;
+    const { width, height, onFinish } = this.props;
     const QWOPStartX = width / 2 / this.scale;
     const QWOPStartY = height / 2 / this.scale;
     const density = 0.5;
@@ -36,8 +37,7 @@ class QWOP extends React.Component {
 
     ground.createFixture({
       shape: planck.Box(width, 1),
-      friction: 0,
-      restitution: 0
+      userData: "floor"
     });
 
     const torso = this.world.createDynamicBody(
@@ -65,7 +65,8 @@ class QWOP extends React.Component {
     leftThigh.createFixture({
       shape: planck.Box(0.5, 2),
       density,
-      filterGroupIndex: -1
+      filterGroupIndex: -1,
+      userData: "touchable"
     });
     leftThigh.resetMassData();
 
@@ -75,7 +76,8 @@ class QWOP extends React.Component {
     rightThigh.createFixture({
       shape: planck.Box(0.5, 2),
       density,
-      filterGroupIndex: -1
+      filterGroupIndex: -1,
+      userData: "touchable"
     });
     rightThigh.resetMassData();
 
@@ -103,7 +105,8 @@ class QWOP extends React.Component {
     leftCalf.createFixture({
       shape: planck.Box(0.3, 1.4),
       density,
-      filterGroupIndex: -1
+      filterGroupIndex: -1,
+      userData: "touchable"
     });
     leftCalf.resetMassData();
 
@@ -113,7 +116,8 @@ class QWOP extends React.Component {
     rightCalf.createFixture({
       shape: planck.Box(0.3, 1.4),
       density,
-      filterGroupIndex: -1
+      filterGroupIndex: -1,
+      userData: "touchable"
     });
     rightCalf.resetMassData();
 
@@ -141,7 +145,8 @@ class QWOP extends React.Component {
     leftFoot.createFixture({
       shape: planck.Box(0.6, 0.3, Vec2(0.3, 0)),
       density,
-      filterGroupIndex: -1
+      filterGroupIndex: -1,
+      userData: "touchable"
     });
     leftFoot.resetMassData();
 
@@ -151,7 +156,8 @@ class QWOP extends React.Component {
     rightFoot.createFixture({
       shape: planck.Box(0.6, 0.3, Vec2(0.3, 0)),
       density,
-      filterGroupIndex: -1
+      filterGroupIndex: -1,
+      userData: "touchable"
     });
     rightFoot.resetMassData();
 
@@ -264,6 +270,24 @@ class QWOP extends React.Component {
         Vec2(QWOPStartX - 0.5, QWOPStartY - 3.8 + 2.9)
       )
     );
+
+    // Check if lost
+
+    this.world.on("begin-contact", contact => {
+      const fixtureA = contact.getFixtureA();
+      const fixtureB = contact.getFixtureB();
+
+      if (
+        !(
+          (fixtureA.getUserData() === "touchable" ||
+            fixtureA.getUserData() === "floor") &&
+          (fixtureB.getUserData() === "touchable" ||
+            fixtureB.getUserData() === "floor")
+        )
+      ) {
+        onFinish(false);
+      }
+    });
 
     window.world = this.world; // Debug
     this._frame();
