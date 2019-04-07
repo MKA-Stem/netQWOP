@@ -27,258 +27,202 @@ class QWOP extends React.Component {
 
   componentDidMount() {
     const { width, height, onFinish } = this.props;
-    const QWOPStartX = width / 2 / this.scale;
-    const QWOPStartY = height / 2 / this.scale;
-    const density = 0.5;
 
-    this.world = planck.World(Vec2(0, 14));
-
+    this.world = planck.World(Vec2(0, 7));
     this.ctx = this.canvas.getContext("2d");
 
+    // Static object for the ground
     const ground = this.world.createBody({
       type: "static",
       position: Vec2(width / 2 / this.scale, height / this.scale),
       angle: 0
     });
-
     ground.createFixture({
       shape: planck.Box(width, 1),
       userData: "floor"
     });
 
-    const torso = this.world.createDynamicBody(
-      Vec2(QWOPStartX, QWOPStartY - 1.5)
-    );
-    torso.createFixture({
-      shape: planck.Box(1, 2.5),
-      filterGroupIndex: -1
+    // from polar
+    const PolarVec = (r, theta) =>
+      Vec2(r * Math.cos(theta), r * Math.sin(theta));
+    const Perp = ({ x, y }) => {
+      const v = Vec2(-y, x);
+      v.normalize();
+      return v;
+    };
+
+    // Configuration for QWOP's body
+    this.params = {};
+    const { params } = this;
+    params.stance = 2; // hip width
+    params.torso = PolarVec(5, 0.2 + Math.PI / 2);
+    params.thighLength = 3.2;
+    params.rightThigh = PolarVec(params.thighLength, 1.1);
+    params.leftThigh = PolarVec(params.thighLength, 1.5);
+    params.hipFlex = Math.PI / 1.8;
+    params.calfLength = 3.4;
+    params.rightCalf = PolarVec(params.calfLength, 1.8);
+    params.leftCalf = PolarVec(params.calfLength, 1.9);
+    params.kneeFlex = Math.PI / 3;
+    params.footLength = 1;
+    params.ankleFlex = 0.2;
+
+    this.points = {};
+    const { points } = this;
+    points.torso = Vec2(width / 2 / this.scale, height / 2 / this.scale);
+    points.leftHip = points.torso
+      .clone()
+      .add(params.torso.clone().mul(1 / 2))
+      .add(Perp(params.torso).mul(params.stance / 2));
+    points.rightHip = points.torso
+      .clone()
+      .add(params.torso.clone().mul(1 / 2))
+      .sub(Perp(params.torso).mul(params.stance / 2));
+    points.leftShoulder = points.torso
+      .clone()
+      .add(Vec2(-params.stance / 2, -params.torsoHeight / 2));
+    points.rightShoulder = points.torso
+      .clone()
+      .add(Vec2(params.stance / 2, -params.torsoHeight / 2));
+    points.rightKnee = points.rightHip.clone().add(params.rightThigh);
+    points.leftKnee = points.leftHip.clone().add(params.leftThigh);
+    points.rightAnkle = points.rightKnee.clone().add(params.rightCalf);
+    points.leftAnkle = points.leftKnee.clone().add(params.leftCalf);
+
+    const createLimb = ({
+      between: [a, b],
+      thickness = 0.4,
+      density = 2,
+      friction = 0.2
+    }) => {
+      const { x: w, y: h } = b.clone().sub(a);
+      const theta = Math.atan(h / w);
+      const midpoint = a
+        .clone()
+        .add(b)
+        .mul(1 / 2);
+      const limb = this.world.createDynamicBody(midpoint, theta + Math.PI / 2);
+      limb.createFixture({
+        shape: planck.Box(thickness / 2, Vec2.distance(a, b) / 2),
+        density,
+        friction,
+        filterGroupIndex: -1
+      });
+      limb.resetMassData();
+      return limb;
+    };
+
+    this.bodies = {};
+    const { bodies } = this;
+    bodies.torso = createLimb({
+      between: [
+        points.torso.clone().sub(params.torso.clone().mul(1 / 2)),
+        points.torso.clone().add(params.torso.clone().mul(1 / 2))
+      ],
+      thickness: params.stance,
+      density: 0.1
     });
-    torso.createFixture({
-      shape: planck.Box(0.2, 0.3, Vec2(0, -2.5 - 0.3)),
-      density,
-      filterGroupIndex: -1
+    bodies.leftThigh = createLimb({
+      between: [points.leftHip, points.leftKnee]
     });
-    torso.createFixture({
-      shape: planck.Box(0.7, 0.7, Vec2(0, -2.5 - 0.6 - 0.7)),
-      density,
-      filterGroupIndex: -1
+    bodies.rightThigh = createLimb({
+      between: [points.rightHip, points.rightKnee]
     });
-    torso.resetMassData();
-
-    const leftThigh = this.world.createDynamicBody(
-      Vec2(QWOPStartX + 0.25, QWOPStartY + 2.5)
-    );
-    leftThigh.createFixture({
-      shape: planck.Box(0.5, 2),
-      density,
-      filterGroupIndex: -1,
-      userData: "touchable"
+    bodies.rightCalf = createLimb({
+      between: [points.rightKnee, points.rightAnkle]
     });
-    leftThigh.resetMassData();
-
-    const rightThigh = this.world.createDynamicBody(
-      Vec2(QWOPStartX - 0.25, QWOPStartY + 2.5)
-    );
-    rightThigh.createFixture({
-      shape: planck.Box(0.5, 2),
-      density,
-      filterGroupIndex: -1,
-      userData: "touchable"
+    bodies.leftCalf = createLimb({
+      between: [points.leftKnee, points.leftAnkle]
     });
-    rightThigh.resetMassData();
-
-    this.leftHip = this.world.createJoint(
-      planck.RevoluteJoint(
-        { motorSpeed: 0, maxMotorTorque: 30, enableMotor: true },
-        leftThigh,
-        torso,
-        Vec2(QWOPStartX + 0.25, QWOPStartY + 0.5)
-      )
-    );
-
-    this.rightHip = this.world.createJoint(
-      planck.RevoluteJoint(
-        { motorSpeed: 0, maxMotorTorque: 30, enableMotor: true },
-        rightThigh,
-        torso,
-        Vec2(QWOPStartX - 0.25, QWOPStartY + 0.5)
-      )
-    );
-
-    const leftCalf = this.world.createDynamicBody(
-      Vec2(QWOPStartX + 0.25, QWOPStartY + 5.6)
-    );
-    leftCalf.createFixture({
-      shape: planck.Box(0.3, 1.4),
-      density,
-      filterGroupIndex: -1,
-      userData: "touchable"
+    bodies.rightFoot = createLimb({
+      between: [
+        points.rightAnkle,
+        points.rightAnkle
+          .clone()
+          .add(
+            Perp(points.rightAnkle.clone().sub(points.rightKnee)).mul(
+              -params.footLength
+            )
+          )
+      ],
+      friction: 1
     });
-    leftCalf.resetMassData();
-
-    const rightCalf = this.world.createDynamicBody(
-      Vec2(QWOPStartX - 0.25, QWOPStartY + 5.6)
-    );
-    rightCalf.createFixture({
-      shape: planck.Box(0.3, 1.4),
-      density,
-      filterGroupIndex: -1,
-      userData: "touchable"
+    bodies.leftFoot = createLimb({
+      between: [
+        points.leftAnkle,
+        points.leftAnkle
+          .clone()
+          .add(
+            Perp(points.leftAnkle.clone().sub(points.leftKnee)).mul(
+              -params.footLength
+            )
+          )
+      ],
+      friction: 1
     });
-    rightCalf.resetMassData();
 
-    this.leftKnee = this.world.createJoint(
-      planck.RevoluteJoint(
-        { motorSpeed: 0, maxMotorTorque: 30, enableMotor: true },
-        leftCalf,
-        leftThigh,
-        Vec2(QWOPStartX + 0.25, QWOPStartY + 4.2)
-      )
-    );
+    const createJoint = ({
+      between: [a, b],
+      at,
+      motorSpeed = 0,
+      maxMotorTorque = 1000,
+      enableMotor = true,
+      enableLimit = true,
+      lowerAngle = undefined,
+      upperAngle = undefined
+    }) => {
+      const joint = this.world.createJoint(
+        planck.RevoluteJoint(
+          {
+            motorSpeed,
+            maxMotorTorque,
+            enableMotor,
+            enableLimit,
+            lowerAngle,
+            upperAngle
+          },
+          a,
+          b,
+          at
+        )
+      );
+      return joint;
+    };
 
-    this.rightKnee = this.world.createJoint(
-      planck.RevoluteJoint(
-        { motorSpeed: 0, maxMotorTorque: 30, enableMotor: true },
-        rightCalf,
-        rightThigh,
-        Vec2(QWOPStartX - 0.25, QWOPStartY + 4.2)
-      )
-    );
-
-    const leftFoot = this.world.createDynamicBody(
-      Vec2(QWOPStartX + 0.25, QWOPStartY + 7.0)
-    );
-    leftFoot.createFixture({
-      shape: planck.Box(0.6, 0.3, Vec2(0.3, 0)),
-      density,
-      filterGroupIndex: -1,
-      userData: "touchable"
+    this.joints = {};
+    const { joints } = this;
+    joints.leftHip = createJoint({
+      between: [bodies.torso, bodies.leftThigh],
+      at: points.leftHip
     });
-    leftFoot.resetMassData();
-
-    const rightFoot = this.world.createDynamicBody(
-      Vec2(QWOPStartX - 0.25, QWOPStartY + 7.0)
-    );
-    rightFoot.createFixture({
-      shape: planck.Box(0.6, 0.3, Vec2(0.3, 0)),
-      density,
-      filterGroupIndex: -1,
-      userData: "touchable"
+    joints.rightHip = createJoint({
+      between: [bodies.torso, bodies.rightThigh],
+      at: points.rightHip
     });
-    rightFoot.resetMassData();
-
-    // Left Ankle
-    this.world.createJoint(
-      planck.RevoluteJoint(
-        {},
-        leftCalf,
-        leftFoot,
-        Vec2(QWOPStartX + 0.25, QWOPStartY + 6.7)
-      )
-    );
-
-    // Right Ankle
-    this.world.createJoint(
-      planck.RevoluteJoint(
-        {},
-        rightCalf,
-        rightFoot,
-        Vec2(QWOPStartX - 0.25, QWOPStartY + 6.7)
-      )
-    );
-
-    const upperLeftArm = this.world.createDynamicBody(
-      Vec2(QWOPStartX + 0.5, QWOPStartY - 3.8)
-    );
-    upperLeftArm.createFixture({
-      shape: planck.Box(0.3, 1.45, Vec2(0, 1.45)),
-      density,
-      filterGroupIndex: -1
+    joints.rightKnee = createJoint({
+      between: [bodies.rightThigh, bodies.rightCalf],
+      at: points.rightKnee
     });
-    upperLeftArm.resetMassData();
-
-    const upperRightArm = this.world.createDynamicBody(
-      Vec2(QWOPStartX - 0.5, QWOPStartY - 3.8)
-    );
-    upperRightArm.createFixture({
-      shape: planck.Box(0.3, 1.45, Vec2(0, 1.45)),
-      density,
-      filterGroupIndex: -1
+    joints.leftKnee = createJoint({
+      between: [bodies.leftThigh, bodies.leftCalf],
+      at: points.leftKnee
     });
-    upperRightArm.resetMassData();
-
-    // Left Shoulder
-    this.world.createJoint(
-      planck.RevoluteJoint(
-        {},
-        upperLeftArm,
-        torso,
-        Vec2(QWOPStartX + 0.5, QWOPStartY - 3.8)
-      )
-    );
-
-    // Right Shoulder
-    this.world.createJoint(
-      planck.RevoluteJoint(
-        {},
-        upperRightArm,
-        torso,
-        Vec2(QWOPStartX - 0.5, QWOPStartY - 3.8)
-      )
-    );
-
-    const lowerLeftArm = this.world.createDynamicBody(
-      Vec2(QWOPStartX + 0.5, QWOPStartY - 3.8 + 2.9)
-    );
-    lowerLeftArm.createFixture({
-      shape: planck.Box(0.3, 1, Vec2(0, 1)),
-      density,
-      filterGroupIndex: -1
+    joints.leftAnkle = createJoint({
+      between: [bodies.leftFoot, bodies.leftCalf],
+      at: points.leftAnkle,
+      lowerAngle: params.ankleFlex,
+      upperAngle: params.ankleFlex,
+      enableLimit: true
     });
-    lowerLeftArm.createFixture({
-      shape: planck.Box(0.3, 0.3, Vec2(0, 2.3)),
-      density,
-      filterGroupIndex: -1
+    joints.rightAnkle = createJoint({
+      between: [bodies.rightFoot, bodies.rightCalf],
+      at: points.rightAnkle,
+      lowerAngle: params.ankleFlex,
+      upperAngle: params.ankleFlex,
+      enableLimit: true
     });
-    lowerLeftArm.resetMassData();
-
-    const lowerRightArm = this.world.createDynamicBody(
-      Vec2(QWOPStartX - 0.5, QWOPStartY - 3.8 + 2.9)
-    );
-    lowerRightArm.createFixture({
-      shape: planck.Box(0.3, 1, Vec2(0, 1)),
-      density,
-      filterGroupIndex: -1
-    });
-    lowerRightArm.createFixture({
-      shape: planck.Box(0.3, 0.3, Vec2(0, 2.3)),
-      density,
-      filterGroupIndex: -1
-    });
-    lowerRightArm.resetMassData();
-
-    // Left Elbow
-    this.world.createJoint(
-      planck.RevoluteJoint(
-        {},
-        upperLeftArm,
-        lowerLeftArm,
-        Vec2(QWOPStartX + 0.5, QWOPStartY - 3.8 + 2.9)
-      )
-    );
-
-    // Right Elbow
-    this.world.createJoint(
-      planck.RevoluteJoint(
-        {},
-        upperRightArm,
-        lowerRightArm,
-        Vec2(QWOPStartX - 0.5, QWOPStartY - 3.8 + 2.9)
-      )
-    );
 
     // Check if lost
-
     this.world.on("begin-contact", contact => {
       const fixtureA = contact.getFixtureA();
       const fixtureB = contact.getFixtureB();
@@ -295,7 +239,9 @@ class QWOP extends React.Component {
       }
     });
 
-    window.world = this.world; // Debug
+    if (process.env.NODE_ENV === "development") {
+      window.world = this.world; // Debug
+    }
     this._frame();
   }
 
@@ -347,10 +293,10 @@ class QWOP extends React.Component {
   };
 
   _updateMotors({ q, w, o, p }) {
-    this.leftHip.setMotorSpeed(q ? 10 : 0);
-    this.rightHip.setMotorSpeed(w ? 10 : 0);
-    this.leftKnee.setMotorSpeed(o ? 10 : 0);
-    this.rightKnee.setMotorSpeed(p ? 10 : 0);
+    this.joints.leftHip.setMotorSpeed(q ? 3 : 0);
+    this.joints.rightHip.setMotorSpeed(w ? 3 : 0);
+    this.joints.leftKnee.setMotorSpeed(o ? 3 : 0);
+    this.joints.rightKnee.setMotorSpeed(p ? 3 : 0);
   }
 
   render() {

@@ -16,13 +16,13 @@ export default class Host extends React.Component {
     this.socket.on("connect", this._onConnect);
 
     // Attach q/w/o/p event listeners to window
-    this.keydown = window.addEventListener("keydown", this._onKey);
-    this.keyup = window.addEventListener("keyup", this._onKey);
+    window.addEventListener("keydown", this._onKey);
+    window.addEventListener("keyup", this._onKey);
   }
 
   componentWillUnmount() {
-    window.removeEventListener("keydown", this.keydown);
-    window.removeEventListener("keyup", this.keyup);
+    window.removeEventListener("keydown", this._onKey);
+    window.removeEventListener("keyup", this._onKey);
   }
 
   _onKey = e => {

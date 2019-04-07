@@ -13,7 +13,6 @@ const Key = ({ children, pressed, onChange, height, width, ...rest }) => {
       onMouseUp={handler(onChange, false)}
       onTouchStart={handler(onChange, true)}
       onTouchEnd={handler(onChange, false)}
-      dataPressed={pressed}
       {...rest}
     >
       <style jsx>{`
