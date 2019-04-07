@@ -21,14 +21,13 @@ class QWOP extends React.Component {
     onFinish: () => {}
   };
 
-  static controls = ["q", "w", "o", "p"];
-
-  scale = 40;
+  scale = 30;
 
   componentDidMount() {
     const { width, height, onFinish } = this.props;
 
-    this.world = planck.World(Vec2(0, 7));
+    this.world = planck.World(Vec2(0, 10));
+
     this.ctx = this.canvas.getContext("2d");
 
     // Static object for the ground
@@ -91,8 +90,8 @@ class QWOP extends React.Component {
     const createLimb = ({
       between: [a, b],
       thickness = 0.4,
-      density = 2,
-      friction = 0.2
+      density = 0.5,
+      friction = 0
     }) => {
       const { x: w, y: h } = b.clone().sub(a);
       const theta = Math.atan(h / w);
@@ -107,7 +106,6 @@ class QWOP extends React.Component {
         friction,
         filterGroupIndex: -1
       });
-      limb.resetMassData();
       return limb;
     };
 
@@ -144,7 +142,8 @@ class QWOP extends React.Component {
             )
           )
       ],
-      friction: params.footFriction
+      friction: params.footFriction,
+      density: 10
     });
     bodies.leftFoot = createLimb({
       between: [
@@ -157,18 +156,20 @@ class QWOP extends React.Component {
             )
           )
       ],
-      friction: params.footFriction
+      friction: params.footFriction,
+      density: 10
     });
 
     const createJoint = ({
       between: [a, b],
       at,
       motorSpeed = 0,
-      maxMotorTorque = 100,
+      maxMotorTorque = 500,
       enableMotor = true,
-      enableLimit = true,
+      enableLimit = false,
       lowerAngle = undefined,
-      upperAngle = undefined
+      upperAngle = undefined,
+      referenceAngle = undefined
     }) => {
       const joint = this.world.createJoint(
         planck.RevoluteJoint(
@@ -178,7 +179,8 @@ class QWOP extends React.Component {
             enableMotor,
             enableLimit,
             lowerAngle,
-            upperAngle
+            upperAngle,
+            referenceAngle
           },
           a,
           b,
@@ -300,30 +302,22 @@ class QWOP extends React.Component {
 
     const thighs = q ? 1 : w ? -1 : 0;
     const calves = o ? 1 : p ? -1 : 0;
-    const speed = 10;
+    const speed = 3;
 
     if (thighs === 0) {
-      this.joints.leftHip.enableLimit(true);
-      this.joints.rightHip.enableLimit(true);
       this.joints.leftHip.setMotorSpeed(0);
       this.joints.rightHip.setMotorSpeed(0);
     } else {
-      this.joints.leftHip.enableLimit(false);
-      this.joints.rightHip.enableLimit(false);
       this.joints.leftHip.setMotorSpeed(-speed * thighs);
       this.joints.rightHip.setMotorSpeed(speed * thighs);
     }
 
     if (calves === 0) {
-      this.joints.leftKnee.enableLimit(true);
-      this.joints.rightKnee.enableLimit(true);
       this.joints.leftKnee.setMotorSpeed(0);
       this.joints.rightKnee.setMotorSpeed(0);
     } else {
-      this.joints.leftKnee.enableLimit(false);
-      this.joints.rightKnee.enableLimit(false);
-      this.joints.leftKnee.setMotorSpeed(speed * thighs);
-      this.joints.rightKnee.setMotorSpeed(speed * thighs);
+      this.joints.leftKnee.setMotorSpeed(speed * calves);
+      this.joints.rightKnee.setMotorSpeed(speed * calves);
     }
   }
 
