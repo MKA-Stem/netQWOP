@@ -65,7 +65,7 @@ class QWOP extends React.Component {
     this.params = {};
     const { params } = this;
     params.stance = 0.5; // hip width
-    params.torso = PolarVec(5, 0.2 + Math.PI / 2);
+    params.torso = PolarVec(4.5, 0.2 + Math.PI / 2);
     params.thighLength = 3.2;
     params.rightThigh = PolarVec(params.thighLength, 1.1);
     params.leftThigh = PolarVec(params.thighLength, 1.5);
@@ -77,6 +77,13 @@ class QWOP extends React.Component {
     params.footLength = 1;
     params.footFriction = 5;
     params.ankleFlex = 0.2;
+    params.elbowFlex = -Math.PI / 1.7;
+    params.upperArmLength = 2.5;
+    params.leftUpperArm = PolarVec(params.upperArmLength, 1.5);
+    params.rightUpperArm = PolarVec(params.upperArmLength, 1);
+    params.lowerArmLength = 2.1;
+    params.leftLowerArm = PolarVec(params.lowerArmLength, -1);
+    params.rightLowerArm = PolarVec(params.lowerArmLength, -1);
 
     this.points = {};
     const { points } = this;
@@ -91,14 +98,24 @@ class QWOP extends React.Component {
       .sub(Perp(params.torso).mul(params.stance / 2));
     points.leftShoulder = points.torso
       .clone()
-      .add(Vec2(-params.stance / 2, -params.torsoHeight / 2));
+      .sub(params.torso.clone().mul(1 / 2))
+      .add(Perp(params.torso).mul(params.stance / 2));
     points.rightShoulder = points.torso
       .clone()
-      .add(Vec2(params.stance / 2, -params.torsoHeight / 2));
+      .sub(params.torso.clone().mul(1 / 2))
+      .sub(Perp(params.torso).mul(params.stance / 2));
     points.rightKnee = points.rightHip.clone().add(params.rightThigh);
     points.leftKnee = points.leftHip.clone().add(params.leftThigh);
     points.rightAnkle = points.rightKnee.clone().add(params.rightCalf);
     points.leftAnkle = points.leftKnee.clone().add(params.leftCalf);
+    points.rightUpperArm = points.rightShoulder
+      .clone()
+      .add(params.rightUpperArm);
+    points.leftUpperArm = points.leftShoulder.clone().add(params.leftUpperArm);
+    points.leftElbow = points.leftShoulder.clone().add(params.leftUpperArm);
+    points.rightElbow = points.rightShoulder.clone().add(params.rightUpperArm);
+    points.rightLowerArm = points.rightElbow.clone().add(params.rightLowerArm);
+    points.leftLowerArm = points.leftElbow.clone().add(params.leftLowerArm);
 
     const createLimb = ({
       between: [a, b],
@@ -145,7 +162,8 @@ class QWOP extends React.Component {
           .sub(Vec2(0, params.torso.y).mul(1 / 2))
           .add(Vec2(0, -0.2))
       ),
-      density: 0
+      density: 0,
+      filterGroupIndex: -1
     });
 
     bodies.torso.createFixture({
@@ -158,7 +176,8 @@ class QWOP extends React.Component {
           .sub(Vec2(0, params.torso.y).mul(1 / 2))
           .add(Vec2(0, -0.4 - params.stance * 1.5))
       ),
-      density: 0
+      density: 0,
+      filterGroupIndex: -1
     });
 
     bodies.leftThigh = createLimb({
@@ -206,6 +225,50 @@ class QWOP extends React.Component {
       friction: params.footFriction,
       density: 10,
       userData: "touchable"
+    });
+    bodies.rightUpperArm = createLimb({
+      between: [points.rightShoulder, points.rightUpperArm],
+      density: 0.1
+    });
+    bodies.leftUpperArm = createLimb({
+      between: [points.leftShoulder, points.leftUpperArm],
+      density: 0.1
+    });
+    bodies.rightLowerArm = createLimb({
+      between: [points.rightElbow, points.rightLowerArm],
+      density: 0.1,
+      userData: "touchable"
+    });
+    bodies.rightLowerArm.createFixture({
+      shape: planck.Box(
+        params.stance / 2.5,
+        params.stance / 2.5,
+        params.rightLowerArm
+          .clone()
+          .mul(1 / 2)
+          .add(Vec2(-params.stance - 0.08, -params.stance + 0.1))
+      ),
+      density: 0,
+      userData: "touchable",
+      filterGroupIndex: -1
+    });
+    bodies.leftLowerArm = createLimb({
+      between: [points.leftElbow, points.leftLowerArm],
+      density: 0.1,
+      userData: "touchable"
+    });
+    bodies.leftLowerArm.createFixture({
+      shape: planck.Box(
+        params.stance / 2.5,
+        params.stance / 2.5,
+        params.leftLowerArm
+          .clone()
+          .mul(1 / 2)
+          .add(Vec2(-params.stance - 0.08, -params.stance + 0.1))
+      ),
+      density: 0,
+      userData: "touchable",
+      filterGroupIndex: -1
     });
 
     const createJoint = ({
@@ -280,6 +343,34 @@ class QWOP extends React.Component {
       lowerAngle: params.ankleFlex,
       upperAngle: params.ankleFlex,
       enableLimit: true
+    });
+    joints.leftShoulder = createJoint({
+      between: [bodies.leftUpperArm, bodies.torso],
+      at: points.leftShoulder,
+      enableLimit: false,
+      enableMotor: false
+    });
+    joints.rightShoulder = createJoint({
+      between: [bodies.rightUpperArm, bodies.torso],
+      at: points.rightShoulder,
+      enableLimit: false,
+      enableMotor: false
+    });
+    joints.leftElbow = createJoint({
+      between: [bodies.leftLowerArm, bodies.leftUpperArm],
+      at: points.leftElbow,
+      lowerAngle: params.elbowFlex,
+      upperAngle: params.elbowFlex,
+      enableLimit: false,
+      enableMotor: false
+    });
+    joints.rightElbow = createJoint({
+      between: [bodies.rightLowerArm, bodies.rightUpperArm],
+      at: points.rightElbow,
+      lowerAngle: params.elbowFlex,
+      upperAngle: params.elbowFlex,
+      enableLimit: false,
+      enableMotor: false
     });
 
     // Check if lost
