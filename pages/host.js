@@ -1,8 +1,10 @@
 import React from "react";
 import css from "styled-jsx/css";
 import io from "socket.io-client";
+import { generateCombination as generateIdent } from "gfycat-style-urls";
 import GameTopBar from "../components/GameTopBar";
 import QWOP from "../components/QWOP";
+import { getLeaderboard, addScore } from "../lib/leaderboard";
 
 export default class Host extends React.Component {
   state = {
@@ -10,7 +12,9 @@ export default class Host extends React.Component {
     status: "start", // one of 'start', 'playing', 'lost'
     score: 0,
     room: null,
-    dimensions: null
+    dimensions: null,
+    ident: generateIdent(2, " ", true),
+    leaderboard: null
   };
 
   componentDidMount() {
@@ -36,7 +40,9 @@ export default class Host extends React.Component {
       KeyP: "p"
     };
     const button = codes[e.code];
-    this._onButton({ control: button, state: pressed });
+    if (button) {
+      this._onButton({ control: button, state: pressed });
+    }
   };
 
   _onConnect = () => {
@@ -69,8 +75,24 @@ export default class Host extends React.Component {
     this.setState({ dimensions: { width, height } });
   };
 
+  _onLose = async () => {
+    const { score, ident } = this.state;
+    this.setState({ status: "lost", leaderboard: null });
+    await addScore({ name: ident, score });
+    const leaderboard = await getLeaderboard();
+    this.setState({ leaderboard });
+  };
+
   render() {
-    const { buttons, room, dimensions, score, status } = this.state;
+    const {
+      buttons,
+      room,
+      dimensions,
+      score,
+      status,
+      leaderboard,
+      ident
+    } = this.state;
 
     const { className: qwopClass, styles: qwopStyles } = css.resolve`
       canvas {
@@ -95,12 +117,37 @@ export default class Host extends React.Component {
           }
 
           .status {
-            height: 20rem;
-            line-height: 20rem;
-            text-align: center;
+            margin-top: 10rem;
             font-size: 3rem;
+          }
+
+          .status-text {
             color: rgba(0, 0, 0, 0.3);
             text-transform: uppercase;
+            text-align: center;
+            margin-bottom: 3rem;
+          }
+
+          .leaderboard {
+            width: 50rem;
+            margin: 0 auto;
+            margin-top: 2rem;
+          }
+
+          .leaderboard-row {
+            font-size: 2rem;
+            padding: 0.5rem;
+            margin: 0.5rem;
+          }
+          .highlight {
+            padding: 1rem;
+            background-color: orangered;
+            color: white;
+            border-radius: 0.5rem;
+          }
+          .score {
+            width: 10rem;
+            opacity: 0.8;
           }
         `}</style>
         <GameTopBar buttons={buttons} room={room} score={score} />
@@ -112,7 +159,7 @@ export default class Host extends React.Component {
             height={dimensions.height}
             className={qwopClass}
             onScore={e => this.setState({ score: e })}
-            onLose={() => this.setState({ status: "lost" })}
+            onLose={this._onLose}
             q={buttons.q || false}
             w={buttons.w || false}
             o={buttons.o || false}
@@ -120,10 +167,30 @@ export default class Host extends React.Component {
           />
         )}
         {status === "start" && (
-          <div className="status">hit a button to start</div>
+          <div className="status status-text">hit a button to start</div>
         )}
         {status === "lost" && (
-          <div className="status">you tried. hit any button to restart.</div>
+          <div className="status">
+            <div className="status-text">
+              you tried. hit any button to restart.
+            </div>
+            <div className="status-text">leaderboard:</div>
+            <table className="leaderboard">
+              {leaderboard &&
+                leaderboard.map(({ i, id, name, score: leaderScore }) => (
+                  <tr
+                    className={`leaderboard-row ${
+                      name === ident ? "highlight" : ""
+                    }`}
+                    key={id}
+                  >
+                    <td>#{i}</td>
+                    <td className="score">{leaderScore.toFixed(2)}</td>
+                    <td className="name">{name}</td>
+                  </tr>
+                ))}
+            </table>
+          </div>
         )}
       </div>
     );
