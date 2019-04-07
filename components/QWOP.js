@@ -53,16 +53,18 @@ class QWOP extends React.Component {
     // Configuration for QWOP's body
     this.params = {};
     const { params } = this;
-    params.stance = 2; // hip width
+    params.stance = 0.5; // hip width
     params.torso = PolarVec(5, 0.2 + Math.PI / 2);
     params.thighLength = 3.2;
     params.rightThigh = PolarVec(params.thighLength, 1.1);
     params.leftThigh = PolarVec(params.thighLength, 1.5);
+    params.kneeFlex = (5 * Math.PI) / 8;
     params.calfLength = 3.4;
     params.rightCalf = PolarVec(params.calfLength, 1.8);
     params.leftCalf = PolarVec(params.calfLength, 1.9);
+    params.hipFlex = (3 * Math.PI) / 8;
     params.footLength = 1;
-    params.footFriction = 0.3;
+    params.footFriction = 5;
     params.ankleFlex = 0.2;
 
     this.points = {};
@@ -116,8 +118,8 @@ class QWOP extends React.Component {
         points.torso.clone().sub(params.torso.clone().mul(1 / 2)),
         points.torso.clone().add(params.torso.clone().mul(1 / 2))
       ],
-      thickness: params.stance,
-      density: 0.1
+      thickness: params.stance
+      // density: 0.1
     });
     bodies.leftThigh = createLimb({
       between: [points.leftHip, points.leftKnee]
@@ -168,8 +170,7 @@ class QWOP extends React.Component {
       enableMotor = true,
       enableLimit = false,
       lowerAngle = undefined,
-      upperAngle = undefined,
-      referenceAngle = undefined
+      upperAngle = undefined
     }) => {
       const joint = this.world.createJoint(
         planck.RevoluteJoint(
@@ -180,7 +181,7 @@ class QWOP extends React.Component {
             enableLimit,
             lowerAngle,
             upperAngle,
-            referenceAngle
+            referenceAngle: b.getAngle() - a.getAngle()
           },
           a,
           b,
@@ -194,19 +195,31 @@ class QWOP extends React.Component {
     const { joints } = this;
     joints.leftHip = createJoint({
       between: [bodies.torso, bodies.leftThigh],
-      at: points.leftHip
+      at: points.leftHip,
+      enableLimit: true,
+      lowerAngle: -params.hipFlex,
+      upperAngle: params.hipFlex
     });
     joints.rightHip = createJoint({
       between: [bodies.torso, bodies.rightThigh],
-      at: points.rightHip
+      at: points.rightHip,
+      enableLimit: true,
+      lowerAngle: -params.hipFlex,
+      upperAngle: params.hipFlex
     });
     joints.rightKnee = createJoint({
       between: [bodies.rightThigh, bodies.rightCalf],
-      at: points.rightKnee
+      at: points.rightKnee,
+      enableLimit: true,
+      lowerAngle: 0,
+      upperAngle: params.kneeFlex
     });
     joints.leftKnee = createJoint({
       between: [bodies.leftThigh, bodies.leftCalf],
-      at: points.leftKnee
+      at: points.leftKnee,
+      enableLimit: true,
+      lowerAngle: 0,
+      upperAngle: params.kneeFlex
     });
     joints.leftAnkle = createJoint({
       between: [bodies.leftFoot, bodies.leftCalf],
@@ -317,7 +330,7 @@ class QWOP extends React.Component {
       this.joints.rightKnee.setMotorSpeed(0);
     } else {
       this.joints.leftKnee.setMotorSpeed(speed * calves);
-      this.joints.rightKnee.setMotorSpeed(speed * calves);
+      this.joints.rightKnee.setMotorSpeed(-speed * calves);
     }
   }
 
