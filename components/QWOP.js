@@ -133,6 +133,34 @@ class QWOP extends React.Component {
       ],
       thickness: params.stance
     });
+
+    // Create Neck and Head
+    bodies.torso.createFixture({
+      shape: planck.Box(
+        params.stance / 4,
+        0.2,
+        params.torso
+          .clone()
+          .sub(params.torso)
+          .sub(Vec2(0, params.torso.y).mul(1 / 2))
+          .add(Vec2(0, -0.2))
+      ),
+      density: 0
+    });
+
+    bodies.torso.createFixture({
+      shape: planck.Box(
+        params.stance * 1.5,
+        params.stance * 1.5,
+        params.torso
+          .clone()
+          .sub(params.torso)
+          .sub(Vec2(0, params.torso.y).mul(1 / 2))
+          .add(Vec2(0, -0.4 - params.stance * 1.5))
+      ),
+      density: 0
+    });
+
     bodies.leftThigh = createLimb({
       between: [points.leftHip, points.leftKnee],
       userData: "touchable"
