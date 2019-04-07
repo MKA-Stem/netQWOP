@@ -45,6 +45,12 @@ class QWOP extends React.Component {
       shape: planck.Box(width, 1),
       userData: "floor"
     });
+    for (let i = -50; i < 50; i++) {
+      ground.createFixture({
+        shape: planck.Box(0.1, 0.3, Vec2(i * 2, -0.7)),
+        userData: "floor"
+      });
+    }
 
     // from polar
     const PolarVec = (r, theta) =>
