@@ -45,7 +45,7 @@ class QWOP extends React.Component {
       shape: planck.Box(width, 1),
       userData: "floor"
     });
-    for (let i = -50; i < 50; i++) {
+    for (let i = -100; i < 100; i++) {
       ground.createFixture({
         shape: planck.Box(0.1, 0.3, Vec2(i * 2, -0.7)),
         userData: "floor"
@@ -80,7 +80,7 @@ class QWOP extends React.Component {
 
     this.points = {};
     const { points } = this;
-    points.torso = Vec2(width / 4 / this.scale, height / 2 / this.scale);
+    points.torso = Vec2(width / 2 / this.scale, height / 2 / this.scale);
     points.leftHip = points.torso
       .clone()
       .add(params.torso.clone().mul(1 / 2))
@@ -260,6 +260,7 @@ class QWOP extends React.Component {
     if (process.env.NODE_ENV === "development") {
       window.world = this.world; // Debug
     }
+
     this._frame();
   }
 
@@ -297,10 +298,15 @@ class QWOP extends React.Component {
     const vertices = shape.m_vertices;
     const position = body.getPosition();
 
+    // Set camera offset
+    const { width } = this.props;
+    const cameraOffset =
+      this.bodies.torso.getPosition().x - width / 2 / this.scale;
+
     this.ctx.save();
 
     this.ctx.scale(this.scale, this.scale);
-    this.ctx.translate(position.x, position.y);
+    this.ctx.translate(position.x - cameraOffset, position.y);
     this.ctx.rotate(body.getAngle());
 
     this.ctx.beginPath();
