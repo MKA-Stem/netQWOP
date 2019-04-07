@@ -7,6 +7,7 @@ import QWOP from "../components/QWOP";
 export default class Host extends React.Component {
   state = {
     buttons: {},
+    status: "start", // one of 'start', 'playing', 'lost'
     score: 0,
     room: null,
     dimensions: null
@@ -35,7 +36,7 @@ export default class Host extends React.Component {
       KeyP: "p"
     };
     const button = codes[e.code];
-    this.setState(s => ({ buttons: { ...s.buttons, [button]: pressed } }));
+    this._onButton({ control: button, state: pressed });
   };
 
   _onConnect = () => {
@@ -46,7 +47,15 @@ export default class Host extends React.Component {
   };
 
   _onButton = ({ control, state }) => {
-    this.setState(s => ({ buttons: { ...s.buttons, [control]: state } }));
+    this.setState(s => {
+      // reset on button press
+      let { status } = s;
+      if (state === true && (status === "start" || status === "lost")) {
+        status = "playing";
+      }
+
+      return { status, buttons: { ...s.buttons, [control]: state } };
+    });
   };
 
   _measure = el => {
@@ -61,7 +70,7 @@ export default class Host extends React.Component {
   };
 
   render() {
-    const { buttons, room, dimensions, score } = this.state;
+    const { buttons, room, dimensions, score, status } = this.state;
 
     const { className: qwopClass, styles: qwopStyles } = css.resolve`
       canvas {
@@ -84,20 +93,37 @@ export default class Host extends React.Component {
             right: 0;
             bottom: 0;
           }
+
+          .status {
+            height: 20rem;
+            line-height: 20rem;
+            text-align: center;
+            font-size: 3rem;
+            color: rgba(0, 0, 0, 0.3);
+            text-transform: uppercase;
+          }
         `}</style>
         <GameTopBar buttons={buttons} room={room} score={score} />
         {qwopStyles}
-        {dimensions && (
+
+        {dimensions && status === "playing" && (
           <QWOP
             width={dimensions.width}
             height={dimensions.height}
             className={qwopClass}
             onScore={e => this.setState({ score: e })}
+            onLose={() => this.setState({ status: "lost" })}
             q={buttons.q || false}
             w={buttons.w || false}
             o={buttons.o || false}
             p={buttons.p || false}
           />
+        )}
+        {status === "start" && (
+          <div className="status">hit a button to start</div>
+        )}
+        {status === "lost" && (
+          <div className="status">you tried. hit any button to restart</div>
         )}
       </div>
     );

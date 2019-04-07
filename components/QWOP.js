@@ -14,20 +14,22 @@ class QWOP extends React.Component {
     w: PropTypes.bool.isRequired,
     o: PropTypes.bool.isRequired,
     p: PropTypes.bool.isRequired,
-    onFinish: PropTypes.func,
+    onLose: PropTypes.func,
     onScore: PropTypes.func
   };
 
   static defaultProps = {
     className: null,
-    onFinish: () => {},
+    onLose: () => {},
     onScore: () => {}
   };
 
   scale = 30;
 
+  stopped = false;
+
   componentDidMount() {
-    const { width, height, onFinish } = this.props;
+    const { width, height } = this.props;
 
     this.world = planck.World(Vec2(0, 10));
 
@@ -96,7 +98,8 @@ class QWOP extends React.Component {
       between: [a, b],
       thickness = 0.4,
       density = 0.5,
-      friction = 0
+      friction = 0,
+      userData = null
     }) => {
       const { x: w, y: h } = b.clone().sub(a);
       const theta = Math.atan(h / w);
@@ -109,7 +112,8 @@ class QWOP extends React.Component {
         shape: planck.Box(thickness / 2, Vec2.distance(a, b) / 2),
         density,
         friction,
-        filterGroupIndex: -1
+        filterGroupIndex: -1,
+        userData
       });
       return limb;
     };
@@ -122,19 +126,22 @@ class QWOP extends React.Component {
         points.torso.clone().add(params.torso.clone().mul(1 / 2))
       ],
       thickness: params.stance
-      // density: 0.1
     });
     bodies.leftThigh = createLimb({
-      between: [points.leftHip, points.leftKnee]
+      between: [points.leftHip, points.leftKnee],
+      userData: "touchable"
     });
     bodies.rightThigh = createLimb({
-      between: [points.rightHip, points.rightKnee]
+      between: [points.rightHip, points.rightKnee],
+      userData: "touchable"
     });
     bodies.rightCalf = createLimb({
-      between: [points.rightKnee, points.rightAnkle]
+      between: [points.rightKnee, points.rightAnkle],
+      userData: "touchable"
     });
     bodies.leftCalf = createLimb({
-      between: [points.leftKnee, points.leftAnkle]
+      between: [points.leftKnee, points.leftAnkle],
+      userData: "touchable"
     });
     bodies.rightFoot = createLimb({
       between: [
@@ -148,7 +155,8 @@ class QWOP extends React.Component {
           )
       ],
       friction: params.footFriction,
-      density: 10
+      density: 10,
+      userData: "touchable"
     });
     bodies.leftFoot = createLimb({
       between: [
@@ -162,7 +170,8 @@ class QWOP extends React.Component {
           )
       ],
       friction: params.footFriction,
-      density: 10
+      density: 10,
+      userData: "touchable"
     });
 
     const createJoint = ({
@@ -240,21 +249,7 @@ class QWOP extends React.Component {
     });
 
     // Check if lost
-    this.world.on("begin-contact", contact => {
-      const fixtureA = contact.getFixtureA();
-      const fixtureB = contact.getFixtureB();
-
-      if (
-        !(
-          (fixtureA.getUserData() === "touchable" ||
-            fixtureA.getUserData() === "floor") &&
-          (fixtureB.getUserData() === "touchable" ||
-            fixtureB.getUserData() === "floor")
-        )
-      ) {
-        onFinish(false);
-      }
-    });
+    this.world.on("begin-contact", this._contact);
 
     if (process.env.NODE_ENV === "development") {
       window.world = this.world; // Debug
@@ -266,6 +261,28 @@ class QWOP extends React.Component {
     this._updateMotors(nextProps);
     return false; // never update
   }
+
+  componentWillUnmount() {
+    this.world.off("begin-contact", this._contact);
+    this.stopped = true;
+  }
+
+  _contact = contact => {
+    const { onLose } = this.props;
+    const fixtureA = contact.getFixtureA();
+    const fixtureB = contact.getFixtureB();
+
+    if (
+      !(
+        (fixtureA.getUserData() === "touchable" ||
+          fixtureA.getUserData() === "floor") &&
+        (fixtureB.getUserData() === "touchable" ||
+          fixtureB.getUserData() === "floor")
+      )
+    ) {
+      onLose();
+    }
+  };
 
   // eslint-disable-next-line
   _updateScore = throttle(this.props.onScore, 300);
@@ -292,6 +309,9 @@ class QWOP extends React.Component {
   };
 
   _frame = () => {
+    if (this.stopped) {
+      return;
+    }
     const { width, height } = this.props;
     this.world.step(1 / 60);
     this.ctx.clearRect(0, 0, width, height);
