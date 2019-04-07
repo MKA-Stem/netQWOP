@@ -8,11 +8,17 @@ class QWOP extends React.Component {
   static propTypes = {
     height: PropTypes.number.isRequired,
     width: PropTypes.number.isRequired,
+    className: PropTypes.string,
     q: PropTypes.bool.isRequired,
     w: PropTypes.bool.isRequired,
     o: PropTypes.bool.isRequired,
     p: PropTypes.bool.isRequired,
-    onFinish: PropTypes.func.isRequired
+    onFinish: PropTypes.func
+  };
+
+  static defaultProps = {
+    className: null,
+    onFinish: () => {}
   };
 
   static controls = ["q", "w", "o", "p"];
@@ -348,16 +354,14 @@ class QWOP extends React.Component {
   }
 
   render() {
-    const { width, height } = this.props;
+    const { width, height, className } = this.props;
     return (
-      <div>
-        <style jsx>{`
-          canvas {
-            border: solid red 1px;
-          }
-        `}</style>
-        <canvas ref={el => (this.canvas = el)} width={width} height={height} />
-      </div>
+      <canvas
+        ref={el => (this.canvas = el)}
+        width={width}
+        height={height}
+        className={className}
+      />
     );
   }
 }

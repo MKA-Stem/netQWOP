@@ -22,7 +22,8 @@ const Key = ({ children, pressed, onChange, height, width, ...rest }) => {
           border: none;
           border-radius: 1rem;
           background-color: white;
-          box-shadow: 0 3rem 10rem rgba(0, 0, 0, 0.4);
+          box-shadow: 0 calc(${height} * 0.1) calc(${width} * 0.5)
+            rgba(0, 0, 0, 0.3);
 
           height: ${height};
           width: ${width};
@@ -32,13 +33,14 @@ const Key = ({ children, pressed, onChange, height, width, ...rest }) => {
           font-family: inherit;
           text-transform: uppercase;
 
-          transition: 0.1s;
+          transition: box-shadow 0.1s, transform 0.1s;
           user-select: none;
 
           ${pressed &&
             `
             box-shadow: 0 0.5rem 2rem rgba(0,0,0,0.5);
             transform: scale(0.95);
+            background-color: rgba(0,0,0,0.03);
           `}
         }
 
