@@ -7,6 +7,7 @@ import QWOP from "../components/QWOP";
 export default class Host extends React.Component {
   state = {
     buttons: {},
+    score: 0,
     room: null,
     dimensions: null
   };
@@ -60,7 +61,7 @@ export default class Host extends React.Component {
   };
 
   render() {
-    const { buttons, room, dimensions } = this.state;
+    const { buttons, room, dimensions, score } = this.state;
 
     const { className: qwopClass, styles: qwopStyles } = css.resolve`
       canvas {
@@ -84,13 +85,14 @@ export default class Host extends React.Component {
             bottom: 0;
           }
         `}</style>
-        <GameTopBar buttons={buttons} room={room} />
+        <GameTopBar buttons={buttons} room={room} score={score} />
         {qwopStyles}
         {dimensions && (
           <QWOP
             width={dimensions.width}
             height={dimensions.height}
             className={qwopClass}
+            onScore={e => this.setState({ score: e })}
             q={buttons.q || false}
             w={buttons.w || false}
             o={buttons.o || false}

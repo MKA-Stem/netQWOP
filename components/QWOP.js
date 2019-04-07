@@ -3,6 +3,7 @@
 import React from "react";
 import PropTypes from "prop-types";
 import planck, { Vec2 } from "planck-js";
+import throttle from "lodash/throttle";
 
 class QWOP extends React.Component {
   static propTypes = {
@@ -13,12 +14,14 @@ class QWOP extends React.Component {
     w: PropTypes.bool.isRequired,
     o: PropTypes.bool.isRequired,
     p: PropTypes.bool.isRequired,
-    onFinish: PropTypes.func
+    onFinish: PropTypes.func,
+    onScore: PropTypes.func
   };
 
   static defaultProps = {
     className: null,
-    onFinish: () => {}
+    onFinish: () => {},
+    onScore: () => {}
   };
 
   scale = 30;
@@ -69,7 +72,7 @@ class QWOP extends React.Component {
 
     this.points = {};
     const { points } = this;
-    points.torso = Vec2(width / 2 / this.scale, height / 2 / this.scale);
+    points.torso = Vec2(width / 4 / this.scale, height / 2 / this.scale);
     points.leftHip = points.torso
       .clone()
       .add(params.torso.clone().mul(1 / 2))
@@ -264,6 +267,9 @@ class QWOP extends React.Component {
     return false; // never update
   }
 
+  // eslint-disable-next-line
+  _updateScore = throttle(this.props.onScore, 300);
+
   _drawPolygon = (body, shape) => {
     const vertices = shape.m_vertices;
     const position = body.getPosition();
@@ -302,6 +308,10 @@ class QWOP extends React.Component {
         }
       }
     }
+
+    // update the parent component's score value
+    const score = this.bodies.torso.getPosition().x - this.points.torso.x;
+    this._updateScore(score);
 
     window.requestAnimationFrame(this._frame);
   };

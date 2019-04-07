@@ -2,7 +2,7 @@ import PropTypes from "prop-types";
 import css from "styled-jsx/css";
 import Key from "./Key";
 
-const GameTopBar = ({ buttons, room }) => {
+const GameTopBar = ({ buttons, room, score }) => {
   const { className: keyClass, styles: keyStyles } = css.resolve`
       button {
         margin-right: 2rem;
@@ -23,7 +23,7 @@ const GameTopBar = ({ buttons, room }) => {
         .room {
           padding: 1rem;
 
-          width: 8rem;
+          width: 12rem;
           background: white;
           border-radius: 0.5rem;
           box-shadow: 0 0.5rem 3rem rgba(0, 0, 0, 0.1);
@@ -31,15 +31,10 @@ const GameTopBar = ({ buttons, room }) => {
           text-transform: uppercase;
         }
 
-        .room > .code {
+        .code {
           font-family: monospace;
           font-size: 1.5rem;
           letter-spacing: 0.2rem;
-        }
-
-        .room > .room-label {
-          color: rgba(0, 0, 0, 0.5);
-          margin-bottom: 0.5rem;
         }
 
         .top-group {
@@ -48,15 +43,22 @@ const GameTopBar = ({ buttons, room }) => {
           align-items: center;
         }
 
-        .pair-label {
-          margin-top: 2rem;
-          font-size: 1.5rem;
+        .status-label {
+          margin-top: 1rem;
+          font-size: 1rem;
           text-transform: uppercase;
           letter-spacing: 0.1rem;
+          color: rgba(0, 0, 0, 0.5);
+          margin-bottom: 0.5rem;
         }
 
         .key-pair {
           margin-right: -2rem;
+        }
+
+        .score {
+          font-size: 2rem;
+          margin-top: 1rem;
         }
       `}</style>
       {keyStyles}
@@ -79,12 +81,14 @@ const GameTopBar = ({ buttons, room }) => {
             W
           </Key>
         </div>
-        <div className="pair-label">Thighs</div>
+        <div className="status-label">Thighs</div>
       </div>
       <div>
         <div className="room">
-          <div className="room-label">join code</div>
+          <div className="status-label">join code</div>
           <div className="code">{room}</div>
+          <div className="status-label">score</div>
+          <div className="score">{score.toFixed(2)}</div>
         </div>
       </div>
       <div className="top-group">
@@ -106,19 +110,21 @@ const GameTopBar = ({ buttons, room }) => {
             P
           </Key>
         </div>
-        <div className="pair-label">Calves</div>
+        <div className="status-label">Calves</div>
       </div>
     </div>
   );
 };
 
 GameTopBar.defaultProps = {
-  room: ""
+  room: "",
+  score: 0
 };
 
 GameTopBar.propTypes = {
   buttons: PropTypes.object.isRequired,
-  room: PropTypes.string
+  room: PropTypes.string,
+  score: PropTypes.number
 };
 
 export default GameTopBar;
