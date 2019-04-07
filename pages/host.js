@@ -15,8 +15,27 @@ export default class Host extends React.Component {
     this.socket = io({ transports: ["websocket"] });
     this.socket.on("connect", this._onConnect);
 
-    this.setState({});
+    // Attach q/w/o/p event listeners to window
+    this.keydown = window.addEventListener("keydown", this._onKey);
+    this.keyup = window.addEventListener("keyup", this._onKey);
   }
+
+  componentWillUnmount() {
+    window.removeEventListener("keydown", this.keydown);
+    window.removeEventListener("keyup", this.keyup);
+  }
+
+  _onKey = e => {
+    const pressed = e.type === "keydown";
+    const codes = {
+      KeyQ: "q",
+      KeyW: "w",
+      KeyO: "o",
+      KeyP: "p"
+    };
+    const button = codes[e.code];
+    this.setState(s => ({ buttons: { ...s.buttons, [button]: pressed } }));
+  };
 
   _onConnect = () => {
     this.socket.emit("host", null, room => {
