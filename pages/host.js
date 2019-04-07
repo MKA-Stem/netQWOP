@@ -123,7 +123,7 @@ export default class Host extends React.Component {
           <div className="status">hit a button to start</div>
         )}
         {status === "lost" && (
-          <div className="status">you tried. hit any button to restart</div>
+          <div className="status">you tried. hit any button to restart.</div>
         )}
       </div>
     );
